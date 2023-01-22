@@ -35,7 +35,6 @@ namespace KeyboardSounder
 
         AsioOut asioOut;
         String asioDriver;
-        WaveOutEvent outputDevice;
         private static WaveMixerStream32 mixer = new WaveMixerStream32();
 
         AudioFileReader afr1 = new AudioFileReader(@"dong.wav");
@@ -48,7 +47,7 @@ namespace KeyboardSounder
             //タイマー初期化
             MyTimer = new DispatcherTimer();
             MyTimer.Tick += MyTimer_Tick;
-            //時間間隔、8ミリ秒にしてみた
+            //時間間隔、1ミリ秒にしてみた
             MyTimer.Interval = new TimeSpan(0, 0, 0, 0, 1);
             MyTimer.Start();
 
@@ -58,20 +57,22 @@ namespace KeyboardSounder
                 comboBox1.Items.Add(s);
                 asioDriver = s;
                 asioOut = new AsioOut(asioDriver);
-
-
-                mixer.AutoStop = false;
-
-                mixer.AddInputStream(afr1);
-                mixer.AddInputStream(afr2);
-                afr1.Volume = (float)(trackBar1.Value / 500f);
-                afr2.Volume = (float)(trackBar1.Value / 500f);
-                asioOut.Init(mixer);
-                asioOut.Play();
-
-
-
             }
+
+            if (DriverList.Length > 0)
+            {
+                comboBox1.SelectedIndex = 0;
+            }
+
+            mixer.AddInputStream(afr1);
+            mixer.AddInputStream(afr2);
+            mixer.AutoStop = false;
+
+            setVolume();
+            asioOut.Init(mixer);
+            afr1.Position = afr1.Length;
+            afr2.Position = afr2.Length;
+            asioOut.Play();
 
         }
 
@@ -94,21 +95,12 @@ namespace KeyboardSounder
 
             if (beforeKey1AsyncState == 0 && key1AsyncState != 0)
             {
-                afr1.Volume = (float)(trackBar1.Value / 500f);
                 afr1.Position = 0;
-
-
-                //AudioFileReader afr = new AudioFileReader(@"dong.wav");
-                //outputDevice = new WaveOutEvent();
-                //afr.Volume = (float)(trackBar1.Value / 100f);
-                //outputDevice.Init(afr);
-                //outputDevice.Play();
             }
             beforeKey1AsyncState = key1AsyncState;
 
             if (beforeKey2AsyncState == 0 && key2AsyncState != 0)
             {
-                afr1.Volume = (float)(trackBar1.Value / 500f);
                 afr1.Position = 0;
             }
             beforeKey2AsyncState = key2AsyncState;
@@ -116,7 +108,6 @@ namespace KeyboardSounder
 
             if (beforeKey3AsyncState == 0 && key3AsyncState != 0)
             {
-                afr2.Volume = (float)(trackBar1.Value / 500f);
                 afr2.Position = 0;
             }
             beforeKey3AsyncState = key3AsyncState;
@@ -124,7 +115,6 @@ namespace KeyboardSounder
 
             if (beforeKey4AsyncState == 0 && key4AsyncState != 0)
             {
-                afr2.Volume = (float)(trackBar1.Value / 500f);
                 afr2.Position = 0;
             }
             beforeKey4AsyncState = key4AsyncState;
@@ -168,48 +158,16 @@ namespace KeyboardSounder
 
         }
 
-
-
-        private void Form1_KeyDown(object sender, KeyEventArgs e)
-        {
-
-
-            //Console.WriteLine(asioDriver);
-
-
-            //Console.WriteLine(asioOut.PlaybackState);
-            //asioOut.Play();
-
-            //AudioFileReader afr = new AudioFileReader(@"ka.wav");
-            //outputDevice = new WaveOutEvent();
-            //afr.Volume = (float)(trackBar1.Value / 100f);
-            //outputDevice.Init(afr);
-            //outputDevice.Play();
-
-
-
-
-            switch (e.KeyCode)
-            {
-                case Keys.D:
-
-                    break;
-                case Keys.F:
-
-                    break;
-                case Keys.J:
-
-                    break;
-                case Keys.K:
-
-                    break;
-            }
-        }
-
         private void trackBar1_Scroll(object sender, EventArgs e)
         {
             label1.Text = trackBar1.Value.ToString();
+            setVolume();
+        }
 
+        private void setVolume()
+        {
+            afr1.Volume = (float)(trackBar1.Value / 200f);
+            afr2.Volume = (float)(trackBar1.Value / 200f);
         }
     }
 }

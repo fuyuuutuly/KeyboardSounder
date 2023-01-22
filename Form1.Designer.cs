@@ -51,9 +51,9 @@ namespace KeyboardSounder
             this.trackBar1.Location = new System.Drawing.Point(71, 96);
             this.trackBar1.Maximum = 100;
             this.trackBar1.Name = "trackBar1";
-            this.trackBar1.Size = new System.Drawing.Size(171, 45);
+            this.trackBar1.Size = new System.Drawing.Size(214, 45);
             this.trackBar1.TabIndex = 1;
-            this.trackBar1.Value = 50;
+            this.trackBar1.Value = 25;
             this.trackBar1.Scroll += new System.EventHandler(this.trackBar1_Scroll);
             // 
             // label1
@@ -64,15 +64,16 @@ namespace KeyboardSounder
             this.label1.Name = "label1";
             this.label1.Size = new System.Drawing.Size(23, 13);
             this.label1.TabIndex = 2;
-            this.label1.Text = "50";
+            this.label1.Text = "25";
             this.label1.TextAlign = System.Drawing.ContentAlignment.TopCenter;
             // 
             // comboBox1
             // 
+            this.comboBox1.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.comboBox1.FormattingEnabled = true;
             this.comboBox1.Location = new System.Drawing.Point(86, 55);
             this.comboBox1.Name = "comboBox1";
-            this.comboBox1.Size = new System.Drawing.Size(131, 20);
+            this.comboBox1.Size = new System.Drawing.Size(187, 20);
             this.comboBox1.TabIndex = 3;
             // 
             // Form1
@@ -87,7 +88,6 @@ namespace KeyboardSounder
             this.KeyPreview = true;
             this.Name = "Form1";
             this.Text = "Form1";
-            this.KeyDown += new System.Windows.Forms.KeyEventHandler(this.Form1_KeyDown);
             ((System.ComponentModel.ISupportInitialize)(this.trackBar1)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
