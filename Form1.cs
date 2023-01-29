@@ -26,7 +26,6 @@ namespace KeyboardSounder
         private static extern short GetKeyState(int vKey);
 
         private DispatcherTimer MyTimer;
-        private int MyCount;
 
         private short beforeKey1AsyncState;
         private short beforeKey2AsyncState;
@@ -34,7 +33,7 @@ namespace KeyboardSounder
         private short beforeKey4AsyncState;
 
         AsioOut asioOut;
-        String asioDriver;
+        string asioDriver;
         private static WaveMixerStream32 mixer = new WaveMixerStream32();
 
         AudioFileReader afr1 = new AudioFileReader(@"dong.wav");
@@ -51,29 +50,37 @@ namespace KeyboardSounder
             MyTimer.Interval = new TimeSpan(0, 0, 0, 0, 1);
             MyTimer.Start();
 
+            // 音声ファイルの取得
+            mixer.AddInputStream(afr1);
+            mixer.AddInputStream(afr2);
+            mixer.AutoStop = false;
+            afr1.Position = afr1.Length;
+            afr2.Position = afr2.Length;
+
+            setVolume();
+
+            // ドライバー
             string[] DriverList = AsioOut.GetDriverNames();
             foreach (string s in DriverList)
             {
                 comboBox1.Items.Add(s);
-                asioDriver = s;
-                asioOut = new AsioOut(asioDriver);
             }
 
             if (DriverList.Length > 0)
             {
                 comboBox1.SelectedIndex = 0;
+                initializeDriver(DriverList[0]);
             }
 
-            mixer.AddInputStream(afr1);
-            mixer.AddInputStream(afr2);
-            mixer.AutoStop = false;
+        }
 
-            setVolume();
+        private void initializeDriver(string driver)
+        {
+            asioDriver = driver;
+            asioOut?.Dispose();
+            asioOut = new AsioOut(asioDriver);
             asioOut.Init(mixer);
-            afr1.Position = afr1.Length;
-            afr2.Position = afr2.Length;
             asioOut.Play();
-
         }
 
         //一定時間間隔でキーの状態を取得して表示
@@ -166,8 +173,15 @@ namespace KeyboardSounder
 
         private void setVolume()
         {
-            afr1.Volume = (float)(trackBar1.Value / 200f);
-            afr2.Volume = (float)(trackBar1.Value / 200f);
+            afr1.Volume = (float)(trackBar1.Value / 100f);
+            afr2.Volume = (float)(trackBar1.Value / 100f);
+        }
+
+        private void comboBox1_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            string driver = comboBox1.SelectedItem.ToString();
+            initializeDriver(driver);
+            Console.WriteLine(driver);
         }
     }
 }
