@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
 using System.Drawing;
+using System.IO;
 using System.Linq;
 using System.Media;
 using System.Runtime.InteropServices;
@@ -27,21 +28,42 @@ namespace KeyboardSounder
 
         private DispatcherTimer MyTimer;
 
-        private short beforeKey1AsyncState;
-        private short beforeKey2AsyncState;
-        private short beforeKey3AsyncState;
-        private short beforeKey4AsyncState;
+        private short[] beforeKeyAsyncState = new short[9];
 
         AsioOut asioOut;
         string asioDriver;
-        private static WaveMixerStream32 mixer = new WaveMixerStream32();
+        private static WaveMixerStream32 mixer;
 
-        AudioFileReader afr1 = new AudioFileReader(@"dong.wav");
-        AudioFileReader afr2 = new AudioFileReader(@"ka.wav");
+        AudioFileReader[] afr = new AudioFileReader[9];
+
+        string iniPath = "./setting.ini"; //Iniファイルのパス
+
+        Setting setting = new Setting();
+
+
+        [DllImport("kernel32.dll")]
+        private static extern int GetPrivateProfileString(
+         string lpApplicationName,
+         string lpKeyName,
+         string lpDefault,
+         StringBuilder lpReturnedstring,
+         int nSize,
+         string lpFileName);
+
+        [DllImport("kernel32.dll")]
+        private static extern int WritePrivateProfileString(
+            string lpApplicationName,
+            string lpKeyName,
+            string lpstring,
+            string lpFileName);
 
         public Form1()
         {
             InitializeComponent();
+
+            // 初期設定
+            initialDefaultSetting();
+
 
             //タイマー初期化
             MyTimer = new DispatcherTimer();
@@ -51,30 +73,202 @@ namespace KeyboardSounder
             MyTimer.Start();
 
             // 音声ファイルの取得
-            mixer.AddInputStream(afr1);
-            mixer.AddInputStream(afr2);
-            mixer.AutoStop = false;
-            afr1.Position = afr1.Length;
-            afr2.Position = afr2.Length;
+            initialAudioSetting();
 
+            // 音量設定
             setVolume();
 
             // ドライバー
             string[] DriverList = AsioOut.GetDriverNames();
             foreach (string s in DriverList)
             {
-                comboBox1.Items.Add(s);
+                comboBoxDevice.Items.Add(s);
             }
 
             if (DriverList.Length > 0)
             {
-                comboBox1.SelectedIndex = 0;
-                initializeDriver(DriverList[0]);
+                comboBoxDevice.SelectedIndex = 0;
+                InitializeDriver(DriverList[0]);
+            }
+
+
+
+        }
+
+        // iniファイルがない場合の初期設定保存
+        private void initialDefaultSetting()
+        {
+            if (!File.Exists(iniPath))
+            {
+                // iniファイルがない場合の初期設定保存
+                SaveSetting(SettingSection.DeviceSetting.ToString(), SettingKey.Device.ToString(), "");
+                SaveSetting(SettingSection.DeviceSetting.ToString(), SettingKey.Volume.ToString(), "20");
+                SaveSetting(SettingSection.SoundSetting.ToString(), SettingKey.IsEnabled_A.ToString(), "false");
+                SaveSetting(SettingSection.SoundSetting.ToString(), SettingKey.IsEnabled_S.ToString(), "false");
+                SaveSetting(SettingSection.SoundSetting.ToString(), SettingKey.IsEnabled_D.ToString(), "true");
+                SaveSetting(SettingSection.SoundSetting.ToString(), SettingKey.IsEnabled_F.ToString(), "true");
+                SaveSetting(SettingSection.SoundSetting.ToString(), SettingKey.IsEnabled_Space.ToString(), "false");
+                SaveSetting(SettingSection.SoundSetting.ToString(), SettingKey.IsEnabled_J.ToString(), "true");
+                SaveSetting(SettingSection.SoundSetting.ToString(), SettingKey.IsEnabled_K.ToString(), "true");
+                SaveSetting(SettingSection.SoundSetting.ToString(), SettingKey.IsEnabled_L.ToString(), "false");
+                SaveSetting(SettingSection.SoundSetting.ToString(), SettingKey.IsEnabled_Semi.ToString(), "false");
+                SaveSetting(SettingSection.SoundSetting.ToString(), SettingKey.SoundPath_A.ToString(), "");
+                SaveSetting(SettingSection.SoundSetting.ToString(), SettingKey.SoundPath_S.ToString(), "");
+                SaveSetting(SettingSection.SoundSetting.ToString(), SettingKey.SoundPath_D.ToString(), "./ka.wav");
+                SaveSetting(SettingSection.SoundSetting.ToString(), SettingKey.SoundPath_F.ToString(), "./dong.wav");
+                SaveSetting(SettingSection.SoundSetting.ToString(), SettingKey.SoundPath_Space.ToString(), "");
+                SaveSetting(SettingSection.SoundSetting.ToString(), SettingKey.SoundPath_J.ToString(), "./dong.wav");
+                SaveSetting(SettingSection.SoundSetting.ToString(), SettingKey.SoundPath_K.ToString(), "./ka.wav");
+                SaveSetting(SettingSection.SoundSetting.ToString(), SettingKey.SoundPath_L.ToString(), "");
+                SaveSetting(SettingSection.SoundSetting.ToString(), SettingKey.SoundPath_Semi.ToString(), "");
+            }
+
+            // iniファイルのデータを一括ロード
+            setting.device = LoadSetting(SettingSection.DeviceSetting.ToString(), SettingKey.Device.ToString(), "");
+            setting.volume = int.Parse(LoadSetting(SettingSection.DeviceSetting.ToString(), SettingKey.Volume.ToString(), "20"));
+            setting.isEnabled[0] = bool.Parse(LoadSetting(SettingSection.SoundSetting.ToString(), SettingKey.IsEnabled_A.ToString(), "false"));
+            setting.isEnabled[1] = bool.Parse(LoadSetting(SettingSection.SoundSetting.ToString(), SettingKey.IsEnabled_S.ToString(), "false"));
+            setting.isEnabled[2] = bool.Parse(LoadSetting(SettingSection.SoundSetting.ToString(), SettingKey.IsEnabled_D.ToString(), "true"));
+            setting.isEnabled[3] = bool.Parse(LoadSetting(SettingSection.SoundSetting.ToString(), SettingKey.IsEnabled_F.ToString(), "true"));
+            setting.isEnabled[4] = bool.Parse(LoadSetting(SettingSection.SoundSetting.ToString(), SettingKey.IsEnabled_Space.ToString(), "false"));
+            setting.isEnabled[5] = bool.Parse(LoadSetting(SettingSection.SoundSetting.ToString(), SettingKey.IsEnabled_J.ToString(), "true"));
+            setting.isEnabled[6] = bool.Parse(LoadSetting(SettingSection.SoundSetting.ToString(), SettingKey.IsEnabled_K.ToString(), "true"));
+            setting.isEnabled[7] = bool.Parse(LoadSetting(SettingSection.SoundSetting.ToString(), SettingKey.IsEnabled_L.ToString(), "false"));
+            setting.isEnabled[8] = bool.Parse(LoadSetting(SettingSection.SoundSetting.ToString(), SettingKey.IsEnabled_Semi.ToString(), "false"));
+            setting.soundPath[0] = LoadSetting(SettingSection.SoundSetting.ToString(), SettingKey.SoundPath_A.ToString(), "");
+            setting.soundPath[1] = LoadSetting(SettingSection.SoundSetting.ToString(), SettingKey.SoundPath_S.ToString(), "");
+            setting.soundPath[2] = LoadSetting(SettingSection.SoundSetting.ToString(), SettingKey.SoundPath_D.ToString(), "./ka.wav");
+            setting.soundPath[3] = LoadSetting(SettingSection.SoundSetting.ToString(), SettingKey.SoundPath_F.ToString(), "./dong.wav");
+            setting.soundPath[4] = LoadSetting(SettingSection.SoundSetting.ToString(), SettingKey.SoundPath_Space.ToString(), "");
+            setting.soundPath[5] = LoadSetting(SettingSection.SoundSetting.ToString(), SettingKey.SoundPath_J.ToString(), "./dong.wav");
+            setting.soundPath[6] = LoadSetting(SettingSection.SoundSetting.ToString(), SettingKey.SoundPath_K.ToString(), "./ka.wav");
+            setting.soundPath[7] = LoadSetting(SettingSection.SoundSetting.ToString(), SettingKey.SoundPath_L.ToString(), "");
+            setting.soundPath[8] = LoadSetting(SettingSection.SoundSetting.ToString(), SettingKey.SoundPath_Semi.ToString(), "");
+
+            // 画面に反映
+            trackBarVolume.Value = setting.volume;
+            checkBoxA.Checked = setting.isEnabled[0];
+            checkBoxS.Checked = setting.isEnabled[1];
+            checkBoxD.Checked = setting.isEnabled[2];
+            checkBoxF.Checked = setting.isEnabled[3];
+            checkBoxSpace.Checked = setting.isEnabled[4];
+            checkBoxJ.Checked = setting.isEnabled[5];
+            checkBoxK.Checked = setting.isEnabled[6];
+            checkBoxL.Checked = setting.isEnabled[7];
+            checkBoxSemi.Checked = setting.isEnabled[8];
+            textBoxA.Text = setting.soundPath[0];
+            textBoxS.Text = setting.soundPath[1];
+            textBoxD.Text = setting.soundPath[2];
+            textBoxF.Text = setting.soundPath[3];
+            textBoxSpace.Text = setting.soundPath[4];
+            textBoxJ.Text = setting.soundPath[5];
+            textBoxK.Text = setting.soundPath[6];
+            textBoxL.Text = setting.soundPath[7];
+            textBoxSemi.Text = setting.soundPath[8];
+
+        }
+
+        // 全データ保存
+        private void saveAllSettings()
+        {
+            if (File.Exists(iniPath))
+            {
+                SaveSetting(SettingSection.DeviceSetting.ToString(), SettingKey.Device.ToString(), setting.device);
+                SaveSetting(SettingSection.DeviceSetting.ToString(), SettingKey.Volume.ToString(), setting.volume.ToString());
+                SaveSetting(SettingSection.SoundSetting.ToString(), SettingKey.IsEnabled_A.ToString(), setting.isEnabled[0].ToString());
+                SaveSetting(SettingSection.SoundSetting.ToString(), SettingKey.IsEnabled_S.ToString(), setting.isEnabled[1].ToString());
+                SaveSetting(SettingSection.SoundSetting.ToString(), SettingKey.IsEnabled_D.ToString(), setting.isEnabled[2].ToString());
+                SaveSetting(SettingSection.SoundSetting.ToString(), SettingKey.IsEnabled_F.ToString(), setting.isEnabled[3].ToString());
+                SaveSetting(SettingSection.SoundSetting.ToString(), SettingKey.IsEnabled_Space.ToString(), setting.isEnabled[4].ToString());
+                SaveSetting(SettingSection.SoundSetting.ToString(), SettingKey.IsEnabled_J.ToString(), setting.isEnabled[5].ToString());
+                SaveSetting(SettingSection.SoundSetting.ToString(), SettingKey.IsEnabled_K.ToString(), setting.isEnabled[6].ToString());
+                SaveSetting(SettingSection.SoundSetting.ToString(), SettingKey.IsEnabled_L.ToString(), setting.isEnabled[7].ToString());
+                SaveSetting(SettingSection.SoundSetting.ToString(), SettingKey.IsEnabled_Semi.ToString(), setting.isEnabled[8].ToString());
+                SaveSetting(SettingSection.SoundSetting.ToString(), SettingKey.SoundPath_A.ToString(), setting.soundPath[0]);
+                SaveSetting(SettingSection.SoundSetting.ToString(), SettingKey.SoundPath_S.ToString(), setting.soundPath[1]);
+                SaveSetting(SettingSection.SoundSetting.ToString(), SettingKey.SoundPath_D.ToString(), setting.soundPath[2]);
+                SaveSetting(SettingSection.SoundSetting.ToString(), SettingKey.SoundPath_F.ToString(), setting.soundPath[3]);
+                SaveSetting(SettingSection.SoundSetting.ToString(), SettingKey.SoundPath_Space.ToString(), setting.soundPath[4]);
+                SaveSetting(SettingSection.SoundSetting.ToString(), SettingKey.SoundPath_J.ToString(), setting.soundPath[5]);
+                SaveSetting(SettingSection.SoundSetting.ToString(), SettingKey.SoundPath_K.ToString(), setting.soundPath[6]);
+                SaveSetting(SettingSection.SoundSetting.ToString(), SettingKey.SoundPath_L.ToString(), setting.soundPath[7]);
+                SaveSetting(SettingSection.SoundSetting.ToString(), SettingKey.SoundPath_Semi.ToString(), setting.soundPath[8]);
+            }
+
+        }
+        private void initialAudioSetting()
+        {
+
+            mixer = new WaveMixerStream32();
+
+            for (int i = 0; i < 9; i++)
+            {
+                if (File.Exists(setting.soundPath[i]))
+                {
+                    afr[i] = new AudioFileReader(setting.soundPath[i]);
+                    mixer.AddInputStream(afr[i]);
+                    afr[i].Position = afr[i].Length;
+                }
+                else
+                {
+                    afr[i] = null;
+                }
+            }
+
+            mixer.AutoStop = false;
+        }
+
+
+
+        private string LoadSetting(string section, string key, string strDef)
+        {
+            //取得値を格納する変数
+            StringBuilder sbResult = new StringBuilder(1024);
+            try
+            {
+                //Iniファイル情報取得
+                int intRet = GetPrivateProfileString(section
+                                    , key
+                                    , strDef
+                                    , sbResult
+                                    , sbResult.Capacity - 1
+                                    , iniPath);
+
+                return sbResult.ToString();
+            }
+            catch (Exception ex)
+            {
+                return strDef;
+            }
+        }
+
+        private bool SaveSetting(string section, string key, string data)
+        {
+
+            try
+            {
+                //エスケープ文字変換
+                //string strCnv = SetEscape(strSet);
+                //Iniファイルに保存
+                int intRet = WritePrivateProfileString(section, key, data, iniPath);
+
+                if (intRet > 0)
+                {
+                    return true;
+                }
+                else
+                {
+                    return false;
+                }
+            }
+            catch (Exception ex)
+            {
+                return false;
             }
 
         }
 
-        private void initializeDriver(string driver)
+        private void InitializeDriver(string driver)
         {
             asioDriver = driver;
             asioOut?.Dispose();
@@ -87,44 +281,32 @@ namespace KeyboardSounder
         private void MyTimer_Tick(object sender, EventArgs e)
         {
             //KeyをWindowsAPIで使う仮想キーコードに変換
-            var vKey1 = KeyInterop.VirtualKeyFromKey(Key.F);
-            var vKey2 = KeyInterop.VirtualKeyFromKey(Key.J);
-            var vKey3 = KeyInterop.VirtualKeyFromKey(Key.D);
-            var vKey4 = KeyInterop.VirtualKeyFromKey(Key.K);
+            int[] vKey = new int[9];
+            vKey[0] = KeyInterop.VirtualKeyFromKey(Key.A);
+            vKey[1] = KeyInterop.VirtualKeyFromKey(Key.S);
+            vKey[2] = KeyInterop.VirtualKeyFromKey(Key.D);
+            vKey[3] = KeyInterop.VirtualKeyFromKey(Key.F);
+            vKey[4] = KeyInterop.VirtualKeyFromKey(Key.Space);
+            vKey[5] = KeyInterop.VirtualKeyFromKey(Key.J);
+            vKey[6] = KeyInterop.VirtualKeyFromKey(Key.K);
+            vKey[7] = KeyInterop.VirtualKeyFromKey(Key.L);
+            vKey[8] = KeyInterop.VirtualKeyFromKey(Key.OemSemicolon);
 
             //GetAsyncKeyStateでキーの状態を取得して値を表示
-            short key1AsyncState = GetAsyncKeyState(vKey1);
-            short key2AsyncState = GetAsyncKeyState(vKey2);
-            short key3AsyncState = GetAsyncKeyState(vKey3);
-            short key4AsyncState = GetAsyncKeyState(vKey4);
-            //Console.WriteLine("AsyncKey= " + key1AsyncState.ToString());
-            //Console.WriteLine("AsyncKey= " + key2AsyncState.ToString());
-
-            if (beforeKey1AsyncState == 0 && key1AsyncState != 0)
+            short[] keyAsyncState = new short[9];
+            for (int i = 0; i < 9; i++)
             {
-                afr1.Position = 0;
+                if (setting.isEnabled[i] && afr[i] != null)
+                {
+                    keyAsyncState[i] = GetAsyncKeyState(vKey[i]);
+                    if (beforeKeyAsyncState[i] == 0 && keyAsyncState[i] != 0)
+                    {
+                        afr[i].Position = 0;
+                    }
+                    beforeKeyAsyncState[i] = keyAsyncState[i];
+                }
             }
-            beforeKey1AsyncState = key1AsyncState;
 
-            if (beforeKey2AsyncState == 0 && key2AsyncState != 0)
-            {
-                afr1.Position = 0;
-            }
-            beforeKey2AsyncState = key2AsyncState;
-
-
-            if (beforeKey3AsyncState == 0 && key3AsyncState != 0)
-            {
-                afr2.Position = 0;
-            }
-            beforeKey3AsyncState = key3AsyncState;
-
-
-            if (beforeKey4AsyncState == 0 && key4AsyncState != 0)
-            {
-                afr2.Position = 0;
-            }
-            beforeKey4AsyncState = key4AsyncState;
 
             //GetKeyStateでキーの状態を取得して値を表示
             //short key1State = GetKeyState(vKey1);
@@ -165,23 +347,107 @@ namespace KeyboardSounder
 
         }
 
-        private void trackBar1_Scroll(object sender, EventArgs e)
+        private void trackBarVolume_Scroll(object sender, EventArgs e)
         {
-            label1.Text = trackBar1.Value.ToString();
+            labelVolume.Text = trackBarVolume.Value.ToString();
             setVolume();
         }
 
         private void setVolume()
         {
-            afr1.Volume = (float)(trackBar1.Value / 100f);
-            afr2.Volume = (float)(trackBar1.Value / 100f);
+            for (int i = 0; i < 9; i++)
+            {
+                if (afr[i] != null)
+                {
+                    afr[i].Volume = (float)(trackBarVolume.Value / 100f);
+                }
+            }
         }
 
-        private void comboBox1_SelectedIndexChanged(object sender, EventArgs e)
+        private void comboBoxDevice_SelectedIndexChanged(object sender, EventArgs e)
         {
-            string driver = comboBox1.SelectedItem.ToString();
-            initializeDriver(driver);
+            string driver = comboBoxDevice.SelectedItem.ToString();
+            InitializeDriver(driver);
             Console.WriteLine(driver);
         }
+
+        private void checkBox_CheckedChanged(object sender, EventArgs e)
+        {
+            string name = ((CheckBox)sender).Name;
+            switch (name)
+            {
+                case "checkBoxA":
+                    setting.isEnabled[0] = checkBoxA.Checked;
+                    break;
+                case "checkBoxS":
+                    setting.isEnabled[1] = checkBoxS.Checked;
+                    break;
+                case "checkBoxD":
+                    setting.isEnabled[2] = checkBoxD.Checked;
+                    break;
+                case "checkBoxF":
+                    setting.isEnabled[3] = checkBoxF.Checked;
+                    break;
+                case "checkBoxSpace":
+                    setting.isEnabled[4] = checkBoxSpace.Checked;
+                    break;
+                case "checkBoxJ":
+                    setting.isEnabled[5] = checkBoxJ.Checked;
+                    break;
+                case "checkBoxK":
+                    setting.isEnabled[6] = checkBoxK.Checked;
+                    break;
+                case "checkBoxL":
+                    setting.isEnabled[7] = checkBoxL.Checked;
+                    break;
+                case "checkBoxSemi":
+                    setting.isEnabled[8] = checkBoxSemi.Checked;
+                    break;
+            }
+            saveAllSettings();
+
+
+        }
+
+
+    }
+
+
+    enum SettingSection
+    {
+        DeviceSetting,
+        SoundSetting
+    }
+
+    enum SettingKey
+    {
+        Device,
+        Volume,
+        IsEnabled_A,
+        IsEnabled_S,
+        IsEnabled_D,
+        IsEnabled_F,
+        IsEnabled_Space,
+        IsEnabled_J,
+        IsEnabled_K,
+        IsEnabled_L,
+        IsEnabled_Semi,
+        SoundPath_A,
+        SoundPath_S,
+        SoundPath_D,
+        SoundPath_F,
+        SoundPath_Space,
+        SoundPath_J,
+        SoundPath_K,
+        SoundPath_L,
+        SoundPath_Semi,
+    }
+
+    public class Setting
+    {
+        public string device;
+        public int volume;
+        public bool[] isEnabled = new bool[9];
+        public string[] soundPath = new string[9];
     }
 }
