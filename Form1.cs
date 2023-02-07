@@ -32,7 +32,7 @@ namespace KeyboardSounder
 
         AsioOut asioOut;
         string asioDriver;
-        private static WaveMixerStream32 mixer;
+        private static WaveMixerStream32 mixer = new WaveMixerStream32();
 
         AudioFileReader[] afr = new AudioFileReader[9];
 
@@ -75,9 +75,6 @@ namespace KeyboardSounder
             // 音声ファイルの取得
             initialAudioSetting();
 
-            // 音量設定
-            setVolume();
-
             // ドライバー
             string[] DriverList = AsioOut.GetDriverNames();
             foreach (string s in DriverList)
@@ -102,7 +99,7 @@ namespace KeyboardSounder
             {
                 // iniファイルがない場合の初期設定保存
                 SaveSetting(SettingSection.DeviceSetting.ToString(), SettingKey.Device.ToString(), "");
-                SaveSetting(SettingSection.DeviceSetting.ToString(), SettingKey.Volume.ToString(), "20");
+                SaveSetting(SettingSection.DeviceSetting.ToString(), SettingKey.Volume.ToString(), "15");
                 SaveSetting(SettingSection.SoundSetting.ToString(), SettingKey.IsEnabled_A.ToString(), "false");
                 SaveSetting(SettingSection.SoundSetting.ToString(), SettingKey.IsEnabled_S.ToString(), "false");
                 SaveSetting(SettingSection.SoundSetting.ToString(), SettingKey.IsEnabled_D.ToString(), "true");
@@ -125,7 +122,7 @@ namespace KeyboardSounder
 
             // iniファイルのデータを一括ロード
             setting.device = LoadSetting(SettingSection.DeviceSetting.ToString(), SettingKey.Device.ToString(), "");
-            setting.volume = int.Parse(LoadSetting(SettingSection.DeviceSetting.ToString(), SettingKey.Volume.ToString(), "20"));
+            setting.volume = int.Parse(LoadSetting(SettingSection.DeviceSetting.ToString(), SettingKey.Volume.ToString(), "15"));
             setting.isEnabled[0] = bool.Parse(LoadSetting(SettingSection.SoundSetting.ToString(), SettingKey.IsEnabled_A.ToString(), "false"));
             setting.isEnabled[1] = bool.Parse(LoadSetting(SettingSection.SoundSetting.ToString(), SettingKey.IsEnabled_S.ToString(), "false"));
             setting.isEnabled[2] = bool.Parse(LoadSetting(SettingSection.SoundSetting.ToString(), SettingKey.IsEnabled_D.ToString(), "true"));
@@ -198,16 +195,27 @@ namespace KeyboardSounder
         }
         private void initialAudioSetting()
         {
-
-            mixer = new WaveMixerStream32();
+            for (int i = 0; i < 9; i++)
+            {
+                mixer.RemoveInputStream(afr[i]);
+            }
 
             for (int i = 0; i < 9; i++)
             {
-                if (File.Exists(setting.soundPath[i]))
+                if (File.Exists(setting.soundPath[i]) && setting.soundPath[i].EndsWith(".wav"))
                 {
-                    afr[i] = new AudioFileReader(setting.soundPath[i]);
-                    mixer.AddInputStream(afr[i]);
-                    afr[i].Position = afr[i].Length;
+                    try
+                    {
+                        afr[i] = new AudioFileReader(setting.soundPath[i]);
+                        mixer.AddInputStream(afr[i]);
+                        afr[i].Position = afr[i].Length;
+                    }
+                    catch (Exception e)
+                    {
+                        Console.WriteLine(e);
+                        Console.WriteLine(setting.soundPath[i]);
+                        afr[i] = null;
+                    }
                 }
                 else
                 {
@@ -216,6 +224,8 @@ namespace KeyboardSounder
             }
 
             mixer.AutoStop = false;
+
+            setVolume();
         }
 
 
@@ -347,10 +357,16 @@ namespace KeyboardSounder
 
         }
 
-        private void trackBarVolume_Scroll(object sender, EventArgs e)
+        private void trackBarVolume_Change(object sender, EventArgs e)
         {
             labelVolume.Text = trackBarVolume.Value.ToString();
+            setting.volume = trackBarVolume.Value;
             setVolume();
+        }
+
+        private void trackBarVolume_MouseUp(object sender, MouseEventArgs e)
+        {
+            saveAllSettings();
         }
 
         private void setVolume()
@@ -359,7 +375,7 @@ namespace KeyboardSounder
             {
                 if (afr[i] != null)
                 {
-                    afr[i].Volume = (float)(trackBarVolume.Value / 100f);
+                    afr[i].Volume = (float)(setting.volume / 100f);
                 }
             }
         }
@@ -407,6 +423,58 @@ namespace KeyboardSounder
             saveAllSettings();
 
 
+        }
+
+        private void button_Click(object sender, EventArgs e)
+        {
+            var o = openFileDialog1;
+            DialogResult dr = o.ShowDialog();
+            if (dr == DialogResult.OK)
+            {
+                string name = ((Button)sender).Name;
+                switch (name)
+                {
+                    case "buttonA":
+                        textBoxA.Text = o.FileName;
+                        setting.soundPath[0] = o.FileName;
+                        break;
+                    case "buttonS":
+                        textBoxS.Text = o.FileName;
+                        setting.soundPath[1] = o.FileName;
+                        break;
+                    case "buttonD":
+                        textBoxD.Text = o.FileName;
+                        setting.soundPath[2] = o.FileName;
+                        break;
+                    case "buttonF":
+                        textBoxF.Text = o.FileName;
+                        setting.soundPath[3] = o.FileName;
+                        break;
+                    case "buttonSpace":
+                        textBoxSpace.Text = o.FileName;
+                        setting.soundPath[4] = o.FileName;
+                        break;
+                    case "buttonJ":
+                        textBoxJ.Text = o.FileName;
+                        setting.soundPath[5] = o.FileName;
+                        break;
+                    case "buttonK":
+                        textBoxK.Text = o.FileName;
+                        setting.soundPath[6] = o.FileName;
+                        break;
+                    case "buttonL":
+                        textBoxL.Text = o.FileName;
+                        setting.soundPath[7] = o.FileName;
+                        break;
+                    case "buttonSemi":
+                        textBoxSemi.Text = o.FileName;
+                        setting.soundPath[8] = o.FileName;
+                        break;
+                }
+
+                saveAllSettings();
+                initialAudioSetting();
+            }
         }
 
 

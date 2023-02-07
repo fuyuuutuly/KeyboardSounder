@@ -111,7 +111,8 @@ namespace KeyboardSounder
             this.trackBarVolume.Size = new System.Drawing.Size(224, 45);
             this.trackBarVolume.TabIndex = 1;
             this.trackBarVolume.Value = 15;
-            this.trackBarVolume.Scroll += new System.EventHandler(this.trackBarVolume_Scroll);
+            this.trackBarVolume.ValueChanged += new System.EventHandler(this.trackBarVolume_Change);
+            this.trackBarVolume.MouseUp += new System.Windows.Forms.MouseEventHandler(this.trackBarVolume_MouseUp);
             // 
             // labelVolume
             // 
@@ -303,6 +304,7 @@ namespace KeyboardSounder
             this.buttonA.Text = "...";
             this.buttonA.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
             this.buttonA.UseVisualStyleBackColor = true;
+            this.buttonA.Click += new System.EventHandler(this.button_Click);
             // 
             // buttonS
             // 
@@ -313,6 +315,7 @@ namespace KeyboardSounder
             this.buttonS.Text = "...";
             this.buttonS.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
             this.buttonS.UseVisualStyleBackColor = true;
+            this.buttonS.Click += new System.EventHandler(this.button_Click);
             // 
             // buttonD
             // 
@@ -323,6 +326,7 @@ namespace KeyboardSounder
             this.buttonD.Text = "...";
             this.buttonD.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
             this.buttonD.UseVisualStyleBackColor = true;
+            this.buttonD.Click += new System.EventHandler(this.button_Click);
             // 
             // buttonF
             // 
@@ -333,6 +337,7 @@ namespace KeyboardSounder
             this.buttonF.Text = "...";
             this.buttonF.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
             this.buttonF.UseVisualStyleBackColor = true;
+            this.buttonF.Click += new System.EventHandler(this.button_Click);
             // 
             // buttonSpace
             // 
@@ -343,6 +348,7 @@ namespace KeyboardSounder
             this.buttonSpace.Text = "...";
             this.buttonSpace.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
             this.buttonSpace.UseVisualStyleBackColor = true;
+            this.buttonSpace.Click += new System.EventHandler(this.button_Click);
             // 
             // buttonJ
             // 
@@ -353,6 +359,7 @@ namespace KeyboardSounder
             this.buttonJ.Text = "...";
             this.buttonJ.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
             this.buttonJ.UseVisualStyleBackColor = true;
+            this.buttonJ.Click += new System.EventHandler(this.button_Click);
             // 
             // buttonK
             // 
@@ -363,6 +370,7 @@ namespace KeyboardSounder
             this.buttonK.Text = "...";
             this.buttonK.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
             this.buttonK.UseVisualStyleBackColor = true;
+            this.buttonK.Click += new System.EventHandler(this.button_Click);
             // 
             // buttonL
             // 
@@ -373,6 +381,7 @@ namespace KeyboardSounder
             this.buttonL.Text = "...";
             this.buttonL.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
             this.buttonL.UseVisualStyleBackColor = true;
+            this.buttonL.Click += new System.EventHandler(this.button_Click);
             // 
             // buttonSemi
             // 
@@ -383,6 +392,7 @@ namespace KeyboardSounder
             this.buttonSemi.Text = "...";
             this.buttonSemi.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
             this.buttonSemi.UseVisualStyleBackColor = true;
+            this.buttonSemi.Click += new System.EventHandler(this.button_Click);
             // 
             // groupBox1
             // 
