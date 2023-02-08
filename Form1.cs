@@ -30,6 +30,7 @@ namespace KeyboardSounder
 
         private short[] beforeKeyAsyncState = new short[9];
 
+        string[] driverList;
         AsioOut asioOut;
         string asioDriver;
         private static WaveMixerStream32 mixer = new WaveMixerStream32();
@@ -76,19 +77,32 @@ namespace KeyboardSounder
             initialAudioSetting();
 
             // ドライバー
-            string[] DriverList = AsioOut.GetDriverNames();
-            foreach (string s in DriverList)
+            driverList = AsioOut.GetDriverNames();
+            foreach (string s in driverList)
             {
                 comboBoxDevice.Items.Add(s);
             }
 
-            if (DriverList.Length > 0)
+            if (driverList.Length > 0)
             {
-                comboBoxDevice.SelectedIndex = 0;
-                InitializeDriver(DriverList[0]);
+                if (driverList.Contains(setting.device))
+                {
+                    // 保存されているデバイスがあればそれを選択
+                    int idx = driverList.ToList().IndexOf(setting.device);
+                    comboBoxDevice.SelectedIndex = idx;
+                }
+                else
+                {
+                    // 保存されているデバイスがなければ0番目を選択
+                    comboBoxDevice.SelectedIndex = 0;
+                }
+                // 選択されているデバイスで初期化
+                InitializeDriver(driverList[comboBoxDevice.SelectedIndex]);
             }
-
-
+            else
+            {
+                MessageBox.Show("対応するASIOデバイスがありません", "エラー", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            }
 
         }
 
@@ -383,6 +397,9 @@ namespace KeyboardSounder
         private void comboBoxDevice_SelectedIndexChanged(object sender, EventArgs e)
         {
             string driver = comboBoxDevice.SelectedItem.ToString();
+            setting.device = driver;
+            saveAllSettings();
+
             InitializeDriver(driver);
             Console.WriteLine(driver);
         }
