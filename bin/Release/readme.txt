@@ -7,6 +7,7 @@ ASIO再生を使って、キーボードを叩いたタイミングで低遅延�
 
 ※使用には対応デバイスの所持が必要です。
 ※PCの音量調整は機能しません。ツール内の音量調整を使用してください。
+※PCを経由せずに音を出力するため、OBSなどでキャプチャーすることは出来ません。
 ※違うフォーマットのwavが混ざっていると再生出来ない場合があります。
 　This means same sample rate, same bit depth and same number of channels (can't mix mono and stereo).
 ※このツールを使ったいかなる損害にも責任は取れません
