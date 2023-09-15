@@ -11,3 +11,5 @@ ASIO再生を使って、キーボードを叩いたタイミングで低遅延�
 ※違うフォーマットのwavが混ざっていると再生出来ない場合があります。
 　This means same sample rate, same bit depth and same number of channels (can't mix mono and stereo).
 ※このツールを使ったいかなる損害にも責任は取れません
+
+制作: @fuyuuutuly
