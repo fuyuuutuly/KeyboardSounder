@@ -61,7 +61,7 @@ namespace KeyboardSounder
             keyStateDic.Add((int)Keys.J, false);
             keyStateDic.Add((int)Keys.K, false);
             keyStateDic.Add((int)Keys.L, false);
-            keyStateDic.Add((int)Keys.OemSemicolon, false);
+            keyStateDic.Add((int)Keys.Oemplus, false);
 
             // 音声ファイルの取得
             initialAudioSetting();
