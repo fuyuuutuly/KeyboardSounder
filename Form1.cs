@@ -11,36 +11,24 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using System.Windows.Input;
 using System.Windows.Threading;
 
 namespace KeyboardSounder
 {
     public partial class Form1 : Form
     {
-        //必要なAPIはGetAsyncKeyStateだけなんだけど
-        //似たようなGetKeyStateも使ってみた
-        [DllImport("user32.dll")]
-        private static extern short GetAsyncKeyState(int vKey);
-        [DllImport("user32.dll")]
+        private Dictionary<int, bool> keyStateDic = new Dictionary<int, bool>();
 
-        private static extern short GetKeyState(int vKey);
-
-        private DispatcherTimer MyTimer;
-
-        private short[] beforeKeyAsyncState = new short[9];
-
-        string[] driverList;
-        AsioOut asioOut;
-        string asioDriver;
+        private string[] driverList;
+        private AsioOut asioOut;
+        private string asioDriver;
         private static WaveMixerStream32 mixer = new WaveMixerStream32();
 
-        AudioFileReader[] afr = new AudioFileReader[9];
+        private AudioFileReader[] afr = new AudioFileReader[9];
 
-        string iniPath = "./setting.ini"; //Iniファイルのパス
+        private string iniPath = "./setting.ini"; //Iniファイルのパス
 
-        Setting setting = new Setting();
-
+        private Setting setting = new Setting();
 
         [DllImport("kernel32.dll")]
         private static extern int GetPrivateProfileString(
@@ -65,13 +53,15 @@ namespace KeyboardSounder
             // 初期設定
             initialDefaultSetting();
 
-
-            //タイマー初期化
-            MyTimer = new DispatcherTimer();
-            MyTimer.Tick += MyTimer_Tick;
-            //時間間隔、1ミリ秒にしてみた
-            MyTimer.Interval = new TimeSpan(0, 0, 0, 0, 1);
-            MyTimer.Start();
+            keyStateDic.Add((int)Keys.A, false);
+            keyStateDic.Add((int)Keys.S, false);
+            keyStateDic.Add((int)Keys.D, false);
+            keyStateDic.Add((int)Keys.F, false);
+            keyStateDic.Add((int)Keys.Space, false);
+            keyStateDic.Add((int)Keys.J, false);
+            keyStateDic.Add((int)Keys.K, false);
+            keyStateDic.Add((int)Keys.L, false);
+            keyStateDic.Add((int)Keys.OemSemicolon, false);
 
             // 音声ファイルの取得
             initialAudioSetting();
@@ -103,7 +93,50 @@ namespace KeyboardSounder
             {
                 MessageBox.Show("対応するASIOデバイスがありません", "エラー", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             }
+        }
 
+        private KeyboardHook keyboardHook = new KeyboardHook();
+
+        protected override void OnLoad(EventArgs e)
+        {
+            keyboardHook.KeyDownEvent += KeyboardHook_KeyDownEvent;
+            keyboardHook.KeyUpEvent += KeyboardHook_KeyUpEvent;
+            keyboardHook.Hook();
+        }
+
+        private void KeyboardHook_KeyDownEvent(object sender, KeyEventArg e)
+        {
+            // キーが押されたときに音声再生
+            if (keyStateDic.ContainsKey(e.KeyCode))
+            {
+                if (keyStateDic[e.KeyCode] == false)
+                {
+                    keyStateDic[e.KeyCode] = true;
+
+                    int i = keyStateDic.Keys.ToList().IndexOf(e.KeyCode);
+                    if (setting.isEnabled[i] && afr[i] != null)
+                    {
+                        afr[i].Position = 0;
+                    }
+                }
+            }
+        }
+
+        private void KeyboardHook_KeyUpEvent(object sender, KeyEventArg e)
+        {
+            // キーが離されたとき
+            if (keyStateDic.ContainsKey(e.KeyCode))
+            {
+                if (keyStateDic[e.KeyCode] == true)
+                {
+                    keyStateDic[e.KeyCode] = false;
+                }
+            }
+        }
+
+        protected override void OnFormClosing(FormClosingEventArgs e)
+        {
+            keyboardHook.UnHook();
         }
 
         // iniファイルがない場合の初期設定保存
@@ -176,7 +209,6 @@ namespace KeyboardSounder
             textBoxK.Text = setting.soundPath[6];
             textBoxL.Text = setting.soundPath[7];
             textBoxSemi.Text = setting.soundPath[8];
-
         }
 
         // 全データ保存
@@ -205,8 +237,8 @@ namespace KeyboardSounder
                 SaveSetting(SettingSection.SoundSetting.ToString(), SettingKey.SoundPath_L.ToString(), setting.soundPath[7]);
                 SaveSetting(SettingSection.SoundSetting.ToString(), SettingKey.SoundPath_Semi.ToString(), setting.soundPath[8]);
             }
-
         }
+
         private void initialAudioSetting()
         {
             for (int i = 0; i < 9; i++)
@@ -242,8 +274,6 @@ namespace KeyboardSounder
             setVolume();
         }
 
-
-
         private string LoadSetting(string section, string key, string strDef)
         {
             //取得値を格納する変数
@@ -268,7 +298,6 @@ namespace KeyboardSounder
 
         private bool SaveSetting(string section, string key, string data)
         {
-
             try
             {
                 //エスケープ文字変換
@@ -289,7 +318,6 @@ namespace KeyboardSounder
             {
                 return false;
             }
-
         }
 
         private void InitializeDriver(string driver)
@@ -299,76 +327,6 @@ namespace KeyboardSounder
             asioOut = new AsioOut(asioDriver);
             asioOut.Init(mixer);
             asioOut.Play();
-        }
-
-        //一定時間間隔でキーの状態を取得して表示
-        private void MyTimer_Tick(object sender, EventArgs e)
-        {
-            //KeyをWindowsAPIで使う仮想キーコードに変換
-            int[] vKey = new int[9];
-            vKey[0] = KeyInterop.VirtualKeyFromKey(Key.A);
-            vKey[1] = KeyInterop.VirtualKeyFromKey(Key.S);
-            vKey[2] = KeyInterop.VirtualKeyFromKey(Key.D);
-            vKey[3] = KeyInterop.VirtualKeyFromKey(Key.F);
-            vKey[4] = KeyInterop.VirtualKeyFromKey(Key.Space);
-            vKey[5] = KeyInterop.VirtualKeyFromKey(Key.J);
-            vKey[6] = KeyInterop.VirtualKeyFromKey(Key.K);
-            vKey[7] = KeyInterop.VirtualKeyFromKey(Key.L);
-            vKey[8] = KeyInterop.VirtualKeyFromKey(Key.OemSemicolon);
-
-            //GetAsyncKeyStateでキーの状態を取得して値を表示
-            short[] keyAsyncState = new short[9];
-            for (int i = 0; i < 9; i++)
-            {
-                if (setting.isEnabled[i] && afr[i] != null)
-                {
-                    keyAsyncState[i] = GetAsyncKeyState(vKey[i]);
-                    if (beforeKeyAsyncState[i] == 0 && keyAsyncState[i] != 0)
-                    {
-                        afr[i].Position = 0;
-                    }
-                    beforeKeyAsyncState[i] = keyAsyncState[i];
-                }
-            }
-
-
-            //GetKeyStateでキーの状態を取得して値を表示
-            //short key1State = GetKeyState(vKey1);
-            //short key2State = GetKeyState(vKey2);
-            //Console.WriteLine("Key= " + key1State.ToString());
-            //Console.WriteLine("Key= " + key2State.ToString());
-
-            //Key1が押された状態で、Key2も押されていたらの判定
-            // != 0 この判定の仕方は雑だけど問題なさそう
-            //if (key1AsyncState != 0 & (key2AsyncState & 1) == 1)
-            //{
-            //    //カウントを増やして回数の表示を更新
-            //    MyCount++;
-            //    MyTextBlockCount.Text = MyCount.ToString() + "回";
-            //}
-
-            //↑の雑じゃない判定版
-            //if (((key1AsyncState & 0x8000) >> 15 == 1) & ((key2AsyncState & 1) == 1)) { }
-
-            //GetKeyStateとGetAsyncKeyState版でもできた
-            //if ((key1State & 0x8000) >> 15 == 1 & (key2AsyncState & 1)== 1)
-            //{
-            //    MyCount++;
-            //    MyTextBlockCount.Text = MyCount.ToString() + "回";
-            //}
-
-            //GetkeyStateだけだとできなかった
-            //両キーとも押しっぱなしのときしか判定されない
-            //if ((key1State & 0x8000) >> 15 == 1 & (key2State & 0x80) >> 7 == 1)
-            //{
-            //    MyCount++;
-            //    MyTextBlockCount.Text = MyCount.ToString() + "回";
-            //}
-
-            //GetAsynckeyStateだけ → できた
-            //GetkeyStateとGetAsynckeyState → できた
-            //GetkeyStateだけ → むり？
-
         }
 
         private void trackBarVolume_Change(object sender, EventArgs e)
@@ -412,34 +370,40 @@ namespace KeyboardSounder
                 case "checkBoxA":
                     setting.isEnabled[0] = checkBoxA.Checked;
                     break;
+
                 case "checkBoxS":
                     setting.isEnabled[1] = checkBoxS.Checked;
                     break;
+
                 case "checkBoxD":
                     setting.isEnabled[2] = checkBoxD.Checked;
                     break;
+
                 case "checkBoxF":
                     setting.isEnabled[3] = checkBoxF.Checked;
                     break;
+
                 case "checkBoxSpace":
                     setting.isEnabled[4] = checkBoxSpace.Checked;
                     break;
+
                 case "checkBoxJ":
                     setting.isEnabled[5] = checkBoxJ.Checked;
                     break;
+
                 case "checkBoxK":
                     setting.isEnabled[6] = checkBoxK.Checked;
                     break;
+
                 case "checkBoxL":
                     setting.isEnabled[7] = checkBoxL.Checked;
                     break;
+
                 case "checkBoxSemi":
                     setting.isEnabled[8] = checkBoxSemi.Checked;
                     break;
             }
             saveAllSettings();
-
-
         }
 
         private void button_Click(object sender, EventArgs e)
@@ -455,34 +419,42 @@ namespace KeyboardSounder
                         textBoxA.Text = o.FileName;
                         setting.soundPath[0] = o.FileName;
                         break;
+
                     case "buttonS":
                         textBoxS.Text = o.FileName;
                         setting.soundPath[1] = o.FileName;
                         break;
+
                     case "buttonD":
                         textBoxD.Text = o.FileName;
                         setting.soundPath[2] = o.FileName;
                         break;
+
                     case "buttonF":
                         textBoxF.Text = o.FileName;
                         setting.soundPath[3] = o.FileName;
                         break;
+
                     case "buttonSpace":
                         textBoxSpace.Text = o.FileName;
                         setting.soundPath[4] = o.FileName;
                         break;
+
                     case "buttonJ":
                         textBoxJ.Text = o.FileName;
                         setting.soundPath[5] = o.FileName;
                         break;
+
                     case "buttonK":
                         textBoxK.Text = o.FileName;
                         setting.soundPath[6] = o.FileName;
                         break;
+
                     case "buttonL":
                         textBoxL.Text = o.FileName;
                         setting.soundPath[7] = o.FileName;
                         break;
+
                     case "buttonSemi":
                         textBoxSemi.Text = o.FileName;
                         setting.soundPath[8] = o.FileName;
@@ -493,18 +465,15 @@ namespace KeyboardSounder
                 initialAudioSetting();
             }
         }
-
-
     }
 
-
-    enum SettingSection
+    internal enum SettingSection
     {
         DeviceSetting,
         SoundSetting
     }
 
-    enum SettingKey
+    internal enum SettingKey
     {
         Device,
         Volume,
