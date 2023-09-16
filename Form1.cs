@@ -110,10 +110,13 @@ namespace KeyboardSounder
                     keyStateDic[e.KeyCode] = true;
 
                     int i = keyStateDic.Keys.ToList().IndexOf(e.KeyCode);
-                    textBoxList[i].BackColor = Color.Yellow;
-                    if (setting.isEnabled[i] && afr[i] != null)
+                    if (setting.isEnabled[i])
                     {
-                        afr[i].Position = 0;
+                        textBoxList[i].BackColor = Color.Yellow;
+                        if (afr[i] != null)
+                        {
+                            afr[i].Position = 0;
+                        }
                     }
                 }
             }
