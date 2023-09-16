@@ -18,6 +18,8 @@ namespace KeyboardSounder
     public partial class Form1 : Form
     {
         private Dictionary<int, bool> keyStateDic = new Dictionary<int, bool>();
+        private List<TextBox> textBoxList = new List<TextBox>();
+        private Color defaultColor;
 
         private string[] driverList;
         private AsioOut asioOut;
@@ -52,16 +54,6 @@ namespace KeyboardSounder
 
             // 初期設定
             initialDefaultSetting();
-
-            keyStateDic.Add((int)Keys.A, false);
-            keyStateDic.Add((int)Keys.S, false);
-            keyStateDic.Add((int)Keys.D, false);
-            keyStateDic.Add((int)Keys.F, false);
-            keyStateDic.Add((int)Keys.Space, false);
-            keyStateDic.Add((int)Keys.J, false);
-            keyStateDic.Add((int)Keys.K, false);
-            keyStateDic.Add((int)Keys.L, false);
-            keyStateDic.Add((int)Keys.Oemplus, false);
 
             // 音声ファイルの取得
             initialAudioSetting();
@@ -114,6 +106,7 @@ namespace KeyboardSounder
                     keyStateDic[e.KeyCode] = true;
 
                     int i = keyStateDic.Keys.ToList().IndexOf(e.KeyCode);
+                    textBoxList[i].BackColor = Color.Yellow;
                     if (setting.isEnabled[i] && afr[i] != null)
                     {
                         afr[i].Position = 0;
@@ -130,6 +123,9 @@ namespace KeyboardSounder
                 if (keyStateDic[e.KeyCode] == true)
                 {
                     keyStateDic[e.KeyCode] = false;
+
+                    int i = keyStateDic.Keys.ToList().IndexOf(e.KeyCode);
+                    textBoxList[i].BackColor = defaultColor;
                 }
             }
         }
@@ -209,6 +205,29 @@ namespace KeyboardSounder
             textBoxK.Text = setting.soundPath[6];
             textBoxL.Text = setting.soundPath[7];
             textBoxSemi.Text = setting.soundPath[8];
+
+            // リストの初期化
+            keyStateDic.Add((int)Keys.A, false);
+            keyStateDic.Add((int)Keys.S, false);
+            keyStateDic.Add((int)Keys.D, false);
+            keyStateDic.Add((int)Keys.F, false);
+            keyStateDic.Add((int)Keys.Space, false);
+            keyStateDic.Add((int)Keys.J, false);
+            keyStateDic.Add((int)Keys.K, false);
+            keyStateDic.Add((int)Keys.L, false);
+            keyStateDic.Add((int)Keys.Oemplus, false);
+
+            textBoxList.Add(textBoxA);
+            textBoxList.Add(textBoxS);
+            textBoxList.Add(textBoxD);
+            textBoxList.Add(textBoxF);
+            textBoxList.Add(textBoxSpace);
+            textBoxList.Add(textBoxJ);
+            textBoxList.Add(textBoxK);
+            textBoxList.Add(textBoxL);
+            textBoxList.Add(textBoxSemi);
+
+            defaultColor = textBoxA.BackColor;
         }
 
         // 全データ保存
