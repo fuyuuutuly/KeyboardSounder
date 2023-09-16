@@ -20,6 +20,10 @@ namespace KeyboardSounder
         private Dictionary<int, bool> keyStateDic = new Dictionary<int, bool>();
         private List<TextBox> textBoxList = new List<TextBox>();
         private Color defaultColor;
+        private List<CheckBox> checkBoxList = new List<CheckBox>();
+
+        private List<string> checkBoxNameList = new List<string>() { "checkBoxA", "checkBoxS", "checkBoxD", "checkBoxF", "checkBoxSpace", "checkBoxJ", "checkBoxK", "checkBoxL", "checkBoxSemi" };
+        private List<string> buttonNameList = new List<string>() { "buttonA", "buttonS", "buttonD", "buttonF", "buttonSpace", "buttonJ", "buttonK", "buttonL", "buttonSemi" };
 
         private string[] driverList;
         private AsioOut asioOut;
@@ -138,6 +142,39 @@ namespace KeyboardSounder
         // iniファイルがない場合の初期設定保存
         private void initialDefaultSetting()
         {
+            // リストの初期化
+            keyStateDic.Add((int)Keys.A, false);
+            keyStateDic.Add((int)Keys.S, false);
+            keyStateDic.Add((int)Keys.D, false);
+            keyStateDic.Add((int)Keys.F, false);
+            keyStateDic.Add((int)Keys.Space, false);
+            keyStateDic.Add((int)Keys.J, false);
+            keyStateDic.Add((int)Keys.K, false);
+            keyStateDic.Add((int)Keys.L, false);
+            keyStateDic.Add((int)Keys.Oemplus, false);
+
+            textBoxList.Add(textBoxA);
+            textBoxList.Add(textBoxS);
+            textBoxList.Add(textBoxD);
+            textBoxList.Add(textBoxF);
+            textBoxList.Add(textBoxSpace);
+            textBoxList.Add(textBoxJ);
+            textBoxList.Add(textBoxK);
+            textBoxList.Add(textBoxL);
+            textBoxList.Add(textBoxSemi);
+
+            defaultColor = textBoxA.BackColor;
+
+            checkBoxList.Add(checkBoxA);
+            checkBoxList.Add(checkBoxS);
+            checkBoxList.Add(checkBoxD);
+            checkBoxList.Add(checkBoxF);
+            checkBoxList.Add(checkBoxSpace);
+            checkBoxList.Add(checkBoxJ);
+            checkBoxList.Add(checkBoxK);
+            checkBoxList.Add(checkBoxL);
+            checkBoxList.Add(checkBoxSemi);
+
             if (!File.Exists(iniPath))
             {
                 // iniファイルがない場合の初期設定保存
@@ -187,47 +224,12 @@ namespace KeyboardSounder
 
             // 画面に反映
             trackBarVolume.Value = setting.volume;
-            checkBoxA.Checked = setting.isEnabled[0];
-            checkBoxS.Checked = setting.isEnabled[1];
-            checkBoxD.Checked = setting.isEnabled[2];
-            checkBoxF.Checked = setting.isEnabled[3];
-            checkBoxSpace.Checked = setting.isEnabled[4];
-            checkBoxJ.Checked = setting.isEnabled[5];
-            checkBoxK.Checked = setting.isEnabled[6];
-            checkBoxL.Checked = setting.isEnabled[7];
-            checkBoxSemi.Checked = setting.isEnabled[8];
-            textBoxA.Text = setting.soundPath[0];
-            textBoxS.Text = setting.soundPath[1];
-            textBoxD.Text = setting.soundPath[2];
-            textBoxF.Text = setting.soundPath[3];
-            textBoxSpace.Text = setting.soundPath[4];
-            textBoxJ.Text = setting.soundPath[5];
-            textBoxK.Text = setting.soundPath[6];
-            textBoxL.Text = setting.soundPath[7];
-            textBoxSemi.Text = setting.soundPath[8];
 
-            // リストの初期化
-            keyStateDic.Add((int)Keys.A, false);
-            keyStateDic.Add((int)Keys.S, false);
-            keyStateDic.Add((int)Keys.D, false);
-            keyStateDic.Add((int)Keys.F, false);
-            keyStateDic.Add((int)Keys.Space, false);
-            keyStateDic.Add((int)Keys.J, false);
-            keyStateDic.Add((int)Keys.K, false);
-            keyStateDic.Add((int)Keys.L, false);
-            keyStateDic.Add((int)Keys.Oemplus, false);
-
-            textBoxList.Add(textBoxA);
-            textBoxList.Add(textBoxS);
-            textBoxList.Add(textBoxD);
-            textBoxList.Add(textBoxF);
-            textBoxList.Add(textBoxSpace);
-            textBoxList.Add(textBoxJ);
-            textBoxList.Add(textBoxK);
-            textBoxList.Add(textBoxL);
-            textBoxList.Add(textBoxSemi);
-
-            defaultColor = textBoxA.BackColor;
+            for (int i = 0; i < 9; i++)
+            {
+                checkBoxList[i].Checked = setting.isEnabled[i];
+                textBoxList[i].Text = setting.soundPath[i];
+            }
         }
 
         // 全データ保存
@@ -384,44 +386,10 @@ namespace KeyboardSounder
         private void checkBox_CheckedChanged(object sender, EventArgs e)
         {
             string name = ((CheckBox)sender).Name;
-            switch (name)
-            {
-                case "checkBoxA":
-                    setting.isEnabled[0] = checkBoxA.Checked;
-                    break;
 
-                case "checkBoxS":
-                    setting.isEnabled[1] = checkBoxS.Checked;
-                    break;
+            int i = checkBoxNameList.IndexOf(name);
+            setting.isEnabled[i] = checkBoxList[i].Checked;
 
-                case "checkBoxD":
-                    setting.isEnabled[2] = checkBoxD.Checked;
-                    break;
-
-                case "checkBoxF":
-                    setting.isEnabled[3] = checkBoxF.Checked;
-                    break;
-
-                case "checkBoxSpace":
-                    setting.isEnabled[4] = checkBoxSpace.Checked;
-                    break;
-
-                case "checkBoxJ":
-                    setting.isEnabled[5] = checkBoxJ.Checked;
-                    break;
-
-                case "checkBoxK":
-                    setting.isEnabled[6] = checkBoxK.Checked;
-                    break;
-
-                case "checkBoxL":
-                    setting.isEnabled[7] = checkBoxL.Checked;
-                    break;
-
-                case "checkBoxSemi":
-                    setting.isEnabled[8] = checkBoxSemi.Checked;
-                    break;
-            }
             saveAllSettings();
         }
 
@@ -432,53 +400,10 @@ namespace KeyboardSounder
             if (dr == DialogResult.OK)
             {
                 string name = ((Button)sender).Name;
-                switch (name)
-                {
-                    case "buttonA":
-                        textBoxA.Text = o.FileName;
-                        setting.soundPath[0] = o.FileName;
-                        break;
 
-                    case "buttonS":
-                        textBoxS.Text = o.FileName;
-                        setting.soundPath[1] = o.FileName;
-                        break;
-
-                    case "buttonD":
-                        textBoxD.Text = o.FileName;
-                        setting.soundPath[2] = o.FileName;
-                        break;
-
-                    case "buttonF":
-                        textBoxF.Text = o.FileName;
-                        setting.soundPath[3] = o.FileName;
-                        break;
-
-                    case "buttonSpace":
-                        textBoxSpace.Text = o.FileName;
-                        setting.soundPath[4] = o.FileName;
-                        break;
-
-                    case "buttonJ":
-                        textBoxJ.Text = o.FileName;
-                        setting.soundPath[5] = o.FileName;
-                        break;
-
-                    case "buttonK":
-                        textBoxK.Text = o.FileName;
-                        setting.soundPath[6] = o.FileName;
-                        break;
-
-                    case "buttonL":
-                        textBoxL.Text = o.FileName;
-                        setting.soundPath[7] = o.FileName;
-                        break;
-
-                    case "buttonSemi":
-                        textBoxSemi.Text = o.FileName;
-                        setting.soundPath[8] = o.FileName;
-                        break;
-                }
+                int i = buttonNameList.IndexOf(name);
+                textBoxList[i].Text = o.FileName;
+                setting.soundPath[i] = o.FileName;
 
                 saveAllSettings();
                 initialAudioSetting();
