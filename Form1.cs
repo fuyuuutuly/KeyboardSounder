@@ -140,6 +140,7 @@ namespace KeyboardSounder
         protected override void OnFormClosing(FormClosingEventArgs e)
         {
             keyboardHook.UnHook();
+            asioOut?.Dispose();
         }
 
         // iniファイルがない場合の初期設定保存
