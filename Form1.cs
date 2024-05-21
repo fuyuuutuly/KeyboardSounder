@@ -1,4 +1,5 @@
 ﻿using NAudio.Wave;
+using NAudio.Wave.Asio;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -83,7 +84,7 @@ namespace KeyboardSounder
                     comboBoxDevice.SelectedIndex = 0;
                 }
                 // 選択されているデバイスで初期化
-                InitializeDriver(driverList[comboBoxDevice.SelectedIndex]);
+                //InitializeDriver(driverList[comboBoxDevice.SelectedIndex]);
             }
             else
             {
@@ -266,11 +267,15 @@ namespace KeyboardSounder
 
         private void initialAudioSetting()
         {
+            // 音声ファイル消去
             for (int i = 0; i < 9; i++)
             {
                 mixer.RemoveInputStream(afr[i]);
             }
 
+            double mixerSampleRate = 0;
+
+            // 音声ファイルのロード
             for (int i = 0; i < 9; i++)
             {
                 if (File.Exists(setting.soundPath[i]) && setting.soundPath[i].EndsWith(".wav"))
@@ -278,6 +283,15 @@ namespace KeyboardSounder
                     try
                     {
                         afr[i] = new AudioFileReader(setting.soundPath[i]);
+                        if (mixerSampleRate == 0)
+                        {
+                            mixerSampleRate = afr[i].WaveFormat.SampleRate;
+                        }
+                        else if (mixerSampleRate != afr[i].WaveFormat.SampleRate)
+                        {
+                            MessageBox.Show("異なるサンプルレートの音声ファイルが混在しています", "エラー", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                            break;
+                        }
                         mixer.AddInputStream(afr[i]);
                         afr[i].Position = afr[i].Length;
                     }
@@ -347,11 +361,24 @@ namespace KeyboardSounder
 
         private void InitializeDriver(string driver)
         {
-            asioDriver = driver;
             asioOut?.Dispose();
-            asioOut = new AsioOut(asioDriver);
-            asioOut.Init(mixer);
-            asioOut.Play();
+
+            // デバイスが対応するサンプルレートを確認
+            AsioDriver ad = AsioDriver.GetAsioDriverByName(driver);
+            double deviceSampleRate = ad.GetSampleRate();
+            ad.ReleaseComAsioDriver();
+
+            if (deviceSampleRate != mixer.WaveFormat.SampleRate)
+            {
+                MessageBox.Show("このデバイスに非対応のサンプルレートの音声ファイルが含まれています", "エラー", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            }
+            else
+            {
+                asioDriver = driver;
+                asioOut = new AsioOut(asioDriver);
+                asioOut.Init(mixer);
+                asioOut.Play();
+            }
         }
 
         private void trackBarVolume_Change(object sender, EventArgs e)
@@ -412,6 +439,16 @@ namespace KeyboardSounder
                 saveAllSettings();
                 initialAudioSetting();
             }
+        }
+
+        private void btnReset_Click(object sender, EventArgs e)
+        {
+            string driver = comboBoxDevice.SelectedItem.ToString();
+            setting.device = driver;
+            saveAllSettings();
+
+            InitializeDriver(driver);
+            Console.WriteLine(driver);
         }
     }
 

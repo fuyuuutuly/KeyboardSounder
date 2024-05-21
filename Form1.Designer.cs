@@ -65,6 +65,7 @@ namespace KeyboardSounder
             this.buttonSemi = new System.Windows.Forms.Button();
             this.groupBox1 = new System.Windows.Forms.GroupBox();
             this.groupBox2 = new System.Windows.Forms.GroupBox();
+            this.btnReset = new System.Windows.Forms.Button();
             ((System.ComponentModel.ISupportInitialize)(this.trackBarVolume)).BeginInit();
             this.groupBox1.SuspendLayout();
             this.groupBox2.SuspendLayout();
@@ -434,6 +435,7 @@ namespace KeyboardSounder
             // 
             // groupBox2
             // 
+            this.groupBox2.Controls.Add(this.btnReset);
             this.groupBox2.Controls.Add(this.comboBoxDevice);
             this.groupBox2.Controls.Add(this.label2);
             this.groupBox2.Controls.Add(this.label3);
@@ -446,6 +448,17 @@ namespace KeyboardSounder
             this.groupBox2.TabIndex = 7;
             this.groupBox2.TabStop = false;
             this.groupBox2.Text = "DeviceSetting";
+            // 
+            // btnReset
+            // 
+            this.btnReset.Font = new System.Drawing.Font("MS UI Gothic", 10F);
+            this.btnReset.Location = new System.Drawing.Point(340, 21);
+            this.btnReset.Name = "btnReset";
+            this.btnReset.Size = new System.Drawing.Size(28, 22);
+            this.btnReset.TabIndex = 6;
+            this.btnReset.Text = "🔄";
+            this.btnReset.UseVisualStyleBackColor = true;
+            this.btnReset.Click += new System.EventHandler(this.btnReset_Click);
             // 
             // Form1
             // 
@@ -503,6 +516,7 @@ namespace KeyboardSounder
         private System.Windows.Forms.Button buttonSemi;
         private System.Windows.Forms.GroupBox groupBox1;
         private System.Windows.Forms.GroupBox groupBox2;
+        private System.Windows.Forms.Button btnReset;
     }
 }
 
